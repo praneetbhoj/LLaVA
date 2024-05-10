@@ -28,7 +28,6 @@ class CLIPVisionTower(nn.Module):
 
         self.image_processor = CLIPImageProcessor.from_pretrained(self.vision_tower_name)
         self.vision_tower = CLIPVisionModel.from_pretrained(self.vision_tower_name, device_map=device_map)
-        self.vision_tower.requires_grad_(False)
 
         self.is_loaded = True
 
@@ -42,7 +41,6 @@ class CLIPVisionTower(nn.Module):
             raise ValueError(f'Unexpected select feature: {self.select_feature}')
         return image_features
 
-    @torch.no_grad()
     def forward(self, images):
         if type(images) is list:
             image_features = []
@@ -124,13 +122,11 @@ class CLIPVisionTowerS2(CLIPVisionTower):
 
         self.is_loaded = True
 
-    @torch.no_grad()
     def forward_feature(self, images):
         image_forward_outs = self.vision_tower(images.to(device=self.device, dtype=self.dtype), output_hidden_states=True)
         image_features = self.feature_select(image_forward_outs).to(images.dtype)
         return image_features
 
-    @torch.no_grad()
     def forward(self, images):
         if type(images) is list:
             image_features = []
