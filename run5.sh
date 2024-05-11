@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -e
 for weight_decay in 0.05 0.1;
 do
     for learning_rate in 1e-5 3e-5 5e-5;
