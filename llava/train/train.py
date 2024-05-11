@@ -82,6 +82,8 @@ class TrainingArguments(transformers.TrainingArguments):
     optim: str = field(default="adamw_torch")
     remove_unused_columns: bool = field(default=False)
     freeze_mm_mlp_adapter: bool = field(default=False)
+    freeze_mm_vision_encoder: bool = field(default=False)
+    freeze_mm_language_model: bool = field(default=False)
     mpt_attn_impl: Optional[str] = field(default="triton")
     model_max_length: int = field(
         default=512,
@@ -933,6 +935,17 @@ def train(attn_implementation=None):
         if training_args.freeze_mm_mlp_adapter:
             for p in model.get_model().mm_projector.parameters():
                 p.requires_grad = False
+        
+        if training_args.freeze_mm_vision_encoder:
+            for p in model.get_model().get_vision_tower().parameters():
+                p.requires_grad = False
+        
+        if training_args.freeze_mm_language_model:
+            for name, module in model.get_model().named_children():
+                if name == "mm_projector" or name == "vision_tower":
+                    continue
+                for p in module.parameters():
+                    p.requires_grad = False
 
         if training_args.bits in [4, 8]:
             model.get_model().mm_projector.to(dtype=compute_dtype, device=training_args.device)
