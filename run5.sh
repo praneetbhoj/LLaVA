@@ -27,9 +27,9 @@ do
             --bf16 True \
             --output_dir ./checkpoints/run5 \
             --num_train_epochs 2 \
-            --per_device_train_batch_size 8 \
-            --per_device_eval_batch_size 8 \
-            --gradient_accumulation_steps 4 \
+            --per_device_train_batch_size 32 \
+            --per_device_eval_batch_size 32 \
+            --gradient_accumulation_steps 1 \
             --logging_strategy "steps" \
             --logging_steps 1 \
             --evaluation_strategy "steps" \
