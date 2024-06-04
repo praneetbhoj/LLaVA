@@ -16,11 +16,13 @@
 import os
 import warnings
 import shutil
+import json
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, BitsAndBytesConfig
 import torch
 from llava.model import *
 from llava.constants import DEFAULT_IMAGE_PATCH_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
+from safetensors import safe_open
 
 
 def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda", use_flash_attn=False, **kwargs):
@@ -119,6 +121,23 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                     low_cpu_mem_usage=True,
                     **kwargs
                 )
+                print('Loading any trained vision encoder weights...')
+                with open(os.path.join(model_path, 'model.safetensors.index.json'), 'r') as f:
+                    safetensors_index = json.load(f)
+                vision_safetensors_files = set()
+                for k, v in safetensors_index['weight_map'].items():
+                    if k.startswith('model.vision_tower'):
+                        vision_safetensors_files.add(v)
+                if len(vision_safetensors_files) > 0:
+                    vision_encoder_weights = {}
+                    for safetensors_file in vision_safetensors_files:
+                        with safe_open(os.path.join(model_path, safetensors_file), framework="pt", device=0) as f:
+                            for k in f.keys():
+                                if k.startswith('model.vision_tower'):
+                                    vision_encoder_weights[k] = f.get_tensor(k)
+                    model.load_state_dict(vision_encoder_weights, strict=False)
+                    print(f'Loaded the following weights from checkpoint: {sorted(list(vision_encoder_weights.keys()))}')
+                print('Done loading vision encoder weights...')
     else:
         # Load language model
         if model_base is not None:
